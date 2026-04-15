@@ -42,7 +42,7 @@ contract MyToken is ERC20Interface {
     /**
      * @dev Returns the name of the token.
      */
-    string public constant name = "name"; // TODO CHANGE THIS!
+    string public constant name = "cf566";
 
     /**
      * @dev Returns the symbol of the token, usually a shorter version of the
@@ -89,18 +89,17 @@ contract MyToken is ERC20Interface {
      * @return success A boolean value indicating success
      */
     function withdraw(uint256 numTokens) public virtual override returns (bool success) {
-        // Placeholder for (1)
-        // TODO: Complete this function. See the `transferFrom` function for
-        // examples of how to use `require` to revert a transaction if a
-        // boolean statement is false.
-        // 1. Check that the user's balance is sufficient (otherwise, revert)
-        // 2. Adjust data structures appropriately
-        // 3. Send appropriate amount of Ether from contract's reserves (revert
-        //    if send fails)
-        // 4. Emit a {Transfer} event with `to` set to the zero address 0x0 (this
-        //    represents "burning" tokens as per the ERC-20 spec)
-        // 5. Return true. (You'll never need to return false, since the contract
-        //    will revert the transaction in the above failure scenarios.)
+        require(_accountBalances[msg.sender] >= numTokens, "Insufficient balance");
+
+        _accountBalances[msg.sender] -= numTokens;
+        _totalSupply -= numTokens;
+
+        uint256 refundAmount = numTokens * 1000;
+        (bool payoutSucceeded, ) = payable(msg.sender).call{value: refundAmount}("");
+        require(payoutSucceeded, "Withdraw failed");
+
+        emit Transfer(msg.sender, address(0x0), numTokens);
+        return true;
     }
 
     /**

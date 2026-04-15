@@ -44,5 +44,47 @@ library StringTools {
 }
 
 contract WinBattle {
-    // TODO: Implement this contract for problem 2.
+    IEthermonLite public immutable ethermon;
+    string public netID;
+    uint256 public constant BATTLE_RATIO = 64;
+
+    constructor(address ethermonAddress, string memory _netID) {
+        ethermon = IEthermonLite(ethermonAddress);
+        netID = _netID;
+        ethermon.initMonster(_netID);
+    }
+
+    function winBattles(uint256 numBattles) public {
+        ethermon.renameTitle(_findWinningTitle());
+
+        for (uint256 i = 0; i < numBattles; i++) {
+            require(ethermon.battle(), "Unexpected loss");
+        }
+    }
+
+    function win50() external {
+        winBattles(50);
+    }
+
+    function getStats() external view returns (uint256 wins, uint256 losses) {
+        return (
+            ethermon.getNumWins(address(this)),
+            ethermon.getNumLosses(address(this))
+        );
+    }
+
+    function _findWinningTitle() internal view returns (string memory) {
+        uint256 previousBlockHash = uint256(blockhash(block.number - 1));
+
+        for (uint256 i = 0; i < 512; i++) {
+            string memory title = StringTools.makeString(i);
+            uint256 challengerDice = previousBlockHash ^ uint256(sha256(abi.encodePacked(netID, " ", title)));
+
+            if (challengerDice % BATTLE_RATIO == 0) {
+                return title;
+            }
+        }
+
+        revert("No winning title found");
+    }
 }
